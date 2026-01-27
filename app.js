@@ -31,6 +31,7 @@ const db = getFirestore(app);
 // STATE & INITIALIZATION
 // ==========================================================
 let keranjang = [];
+let allMenuData = []; 
 
 document.addEventListener('DOMContentLoaded', loadMenu);
 
@@ -39,51 +40,77 @@ document.addEventListener('DOMContentLoaded', loadMenu);
 // ==========================================================
 async function loadMenu() {
     const menuContainer = document.getElementById('daftar-menu');
-    menuContainer.innerHTML = '<div class="col-12 text-center">Loading menu...</div>';
+    menuContainer.innerHTML = '<div class="col-12 text-center"><div class="spinner-border text-danger"></div></div>';
 
     try {
         const querySnapshot = await getDocs(collection(db, "menu"));
-        menuContainer.innerHTML = '';
+        allMenuData = [];
 
         querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const imageHTML = data.gambar && data.gambar.length > 5
-                ? `<img src="${data.gambar}" class="w-100 h-100" style="object-fit:cover">`
-                : `<span class="text-muted">No Image</span>`;
-
-            const html = `
-                <div class="col-6 col-md-4">
-                    <div class="card card-menu h-100 shadow-sm">
-                        <div class="card-img-top d-flex align-items-center justify-content-center bg-light overflow-hidden">
-                            ${imageHTML}
-                        </div>
-                        <div class="card-body p-3">
-                            <h6 class="card-title fw-bold mb-1 text-dark">${data.nama}</h6>
-                            <p class="card-text text-danger fw-bold mb-3">Rp ${data.harga.toLocaleString('id-ID')}</p>
-                            <button class="btn btn-sm btn-outline-danger w-100 btn-tambah rounded-pill" 
-                                data-nama="${data.nama}" 
-                                data-harga="${data.harga}">
-                                + Tambah
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            menuContainer.innerHTML += html;
+            allMenuData.push({ id: doc.id, ...doc.data() });
         });
 
-        attachButtonListeners();
+        renderMenu('all');
     } catch (error) {
-        console.error("Error loading menu:", error);
-        menuContainer.innerHTML = `<div class="text-danger text-center">Gagal memuat menu: ${error.message}</div>`;
+        console.error("Error:", error);
+        menuContainer.innerHTML = `<div class="text-danger text-center">Gagal memuat: ${error.message}</div>`;
     }
 }
 
-function attachButtonListeners() {
-    document.querySelectorAll('.btn-tambah').forEach(btn => {
-        btn.addEventListener('click', function() {
-            tambahKeKeranjang(this.dataset.nama, parseInt(this.dataset.harga));
-        });
+window.filterKategori = function(kategori) {
+    document.querySelectorAll('.rounded-pill').forEach(btn => {
+        btn.classList.remove('btn-dark', 'active-filter');
+        btn.classList.add('btn-outline-dark');
+    });
+
+    const btnAktif = document.getElementById(`btn-${kategori}`);
+    if (btnAktif) {
+        btnAktif.classList.remove('btn-outline-dark');
+        btnAktif.classList.add('btn-dark', 'active-filter');
+    }
+
+    renderMenu(kategori);
+}
+
+function renderMenu(filter) {
+    const menuContainer = document.getElementById('daftar-menu');
+    menuContainer.innerHTML = '';
+
+    const menuTampil = (filter === 'all') 
+        ? allMenuData 
+        : allMenuData.filter(item => item.kategori === filter);
+
+    if (menuTampil.length === 0) {
+        menuContainer.innerHTML = '<div class="col-12 text-center text-muted py-5">Kategori ini belum ada menunya 😔</div>';
+        return;
+    }
+
+    menuTampil.forEach((data) => {
+        const btnState = data.stok ? '' : 'disabled';
+        const btnText = data.stok ? '+ Tambah' : 'Habis';
+        const opacity = data.stok ? '' : 'opacity: 0.6; grayscale: 100%';
+
+        const html = `
+            <div class="col-6 col-md-4">
+                <div class="card card-menu h-100 shadow-sm" style="${opacity}">
+                    <div class="card-img-top d-flex align-items-center justify-content-center bg-light overflow-hidden position-relative">
+                        ${data.gambar ? `<img src="${data.gambar}" class="w-100 h-100" style="object-fit:cover" onerror="this.src='https://placehold.co/400?text=No+Image'">` : 'No Image'}
+                        ${!data.stok ? '<div class="position-absolute w-100 h-100 bg-dark bg-opacity-50 d-flex align-items-center justify-content-center text-white fw-bold">HABIS</div>' : ''}
+                    </div>
+                    <div class="card-body p-3 d-flex flex-column">
+                        <h6 class="card-title fw-bold mb-1 text-dark text-truncate">${data.nama}</h6>
+                        <small class="text-muted mb-2 text-capitalize">📂 ${data.kategori}</small>
+                        <p class="card-text text-danger fw-bold mb-3">Rp ${data.harga.toLocaleString('id-ID')}</p>
+                        <button class="btn btn-sm btn-outline-danger w-100 btn-tambah rounded-pill mt-auto" 
+                            ${btnState}
+                            onclick="tambahKeKeranjang('${data.nama}', ${data.harga})">
+                            ${btnText}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        menuContainer.innerHTML += html;
     });
 }
 
@@ -148,8 +175,7 @@ async function kirimPesanan() {
     const nama = document.getElementById('input-nama').value;
     const meja = document.getElementById('input-meja').value;
     const catatan = document.getElementById('input-catatan').value;
-    
-    // VALIDASI INPUT KOSONG
+
     if (!nama || !meja) {
         Swal.fire({
             icon: 'warning',
@@ -161,25 +187,19 @@ async function kirimPesanan() {
     }
 
     const btnPesan = document.getElementById('btn-pesan');
-    
-    // --- FITUR PENCEGAH SPAM KLIK (CLIENT SIDE) ---
-    // Matikan tombol segera setelah diklik agar tidak bisa diklik 2x
     btnPesan.disabled = true; 
     btnPesan.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Cek Data...';
 
     try {
-        // --- LANGKAH BARU: CEK DUPLIKASI DI DATABASE (SERVER SIDE) ---
-        // "Cari pesanan di meja ini, atas nama ini, yang statusnya belum selesai"
         const q = query(
             collection(db, "pesanan"), 
             where("nama_pemesan", "==", nama),
             where("nomor_meja", "==", meja),
-            where("status", "==", "Dipesan") // Hanya blokir kalau statusnya masih "Dipesan"
+            where("status", "==", "Dipesan")
         );
 
         const snapshotCek = await getDocs(q);
 
-        // Jika ketemu datanya (artinya sudah pernah pesan dan belum selesai)
         if (!snapshotCek.empty) {
             Swal.fire({
                 icon: 'error',
@@ -187,15 +207,12 @@ async function kirimPesanan() {
                 text: 'Anda sudah memiliki pesanan yang sedang diproses. Mohon tunggu sampai selesai.',
                 confirmButtonColor: '#d33'
             });
-            // Hentikan proses disini, jangan lanjut kirim!
             btnPesan.disabled = false;
             btnPesan.innerHTML = "Pesan Sekarang";
             return; 
         }
 
-        // --- KALAU LOLOS CEK, BARU KITA KIRIM ---
         btnPesan.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Mengirim...';
-        
         const totalBayar = keranjang.reduce((acc, item) => acc + (item.harga * item.qty), 0);
 
         const docRef = await addDoc(collection(db, "pesanan"), {
@@ -208,7 +225,6 @@ async function kirimPesanan() {
             status: "Dipesan"
         });
 
-        // SUKSES
         Swal.fire({
             icon: 'success',
             title: 'Pesanan Masuk Dapur!',
@@ -217,20 +233,16 @@ async function kirimPesanan() {
             timer: 2000
         });
 
-        // BERSIHKAN FORM
         keranjang = [];
         document.getElementById('input-nama').value = '';
         document.getElementById('input-meja').value = '';
         document.getElementById('input-catatan').value = '';
         updateTampilanKeranjang();
-
-        // PANTAU STATUS
         pantauPesanan(docRef.id); 
 
     } catch (e) {
         console.error("Error adding document: ", e);
         Swal.fire({ icon: 'error', title: 'Gagal', text: e.message });
-        // Kalau error, nyalakan tombol lagi
         btnPesan.disabled = false;
         btnPesan.innerHTML = "Pesan Sekarang";
     }
@@ -241,21 +253,14 @@ async function kirimPesanan() {
 // ==========================================
 function pantauPesanan(orderId) {
     const btnPesan = document.getElementById('btn-pesan');
-    
-    // 1. Ubah tombol jadi mode "Menunggu"
     btnPesan.innerHTML = "⏳ Menunggu Makanan Siap...";
     btnPesan.className = "btn btn-warning w-100 py-2 fw-bold rounded-pill shadow-sm text-dark";
     btnPesan.disabled = true;
 
-    // 2. Pasang "CCTV" (Listener) ke dokumen pesanan tadi
-    // Ini akan memantau perubahan data secara real-time
     const unsubscribe = onSnapshot(doc(db, "pesanan", orderId), (docSnap) => {
         const data = docSnap.data();
         
-        // 3. Cek apakah status sudah berubah jadi 'Selesai'
         if (data && data.status === "Selesai") {
-            
-            // 4. MUNCULKAN NOTIFIKASI KE PEMBELI!
             Swal.fire({
                 title: 'HORE! MAKANAN SIAP! 🍜',
                 text: 'Silakan ambil pesanan Anda di meja kasir/dapur.',
@@ -267,12 +272,9 @@ function pantauPesanan(orderId) {
                 backdrop: `rgba(0,0,123,0.4)`
             });
 
-            // 5. Kembalikan tombol ke kondisi semula
             btnPesan.innerHTML = "Pesan Sekarang";
             btnPesan.className = "btn btn-danger w-100 py-2 fw-bold rounded-pill shadow-sm";
             btnPesan.disabled = false;
-
-            // 6. Matikan CCTV (Supaya hemat memori setelah selesai)
             unsubscribe();
         }
     });

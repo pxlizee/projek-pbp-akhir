@@ -13,7 +13,7 @@
             font-family: 'Poppins', sans-serif;
             background-color: #f8f9fa;
         }
-        /* Style untuk Banner Atas */
+
         .hero-section {
             background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200');
             background-size: cover;
@@ -23,22 +23,24 @@
             margin-bottom: 30px;
             border-radius: 0 0 20px 20px;
         }
-        /* Style Kartu Menu biar bisa 'Naik' pas di-hover */
+
         .card-menu {
             transition: transform 0.2s, box-shadow 0.2s;
             border: none;
             border-radius: 15px;
             overflow: hidden;
         }
+
         .card-menu:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
         }
+
         .card-img-top {
             height: 180px;
             object-fit: cover;
         }
-        /* Style Keranjang */
+
         .card-cart {
             border: none;
             border-radius: 15px;
@@ -47,7 +49,6 @@
     </style>
 </head>
 <body>
-
     <div class="hero-section text-center">
         <div class="container">
             <h1 class="display-4 fw-bold">Selamat Datang! 🍽️</h1>
@@ -59,6 +60,13 @@
         <div class="row">
             <div class="col-md-8">
                 <h4 class="mb-4 fw-bold text-dark border-start border-4 border-danger ps-3">Daftar Menu</h4>
+
+                <div class="mb-4 d-flex gap-2 overflow-auto pb-2">
+                    <button onclick="filterKategori('all')" class="btn btn-dark rounded-pill px-4 active-filter" id="btn-all">Semua</button>
+                    <button onclick="filterKategori('makanan')" class="btn btn-outline-dark rounded-pill px-4" id="btn-makanan">Makanan</button>
+                    <button onclick="filterKategori('minuman')" class="btn btn-outline-dark rounded-pill px-4" id="btn-minuman">Minuman</button>
+                </div>
+
                 <div id="daftar-menu" class="row g-4">
                     <div class="col-12 text-center py-5">
                         <div class="spinner-border text-danger" role="status"></div>
@@ -83,8 +91,7 @@
                             <input type="number" id="input-meja" class="form-control bg-light border-0 py-2" placeholder="No. Meja">
                         </div>
                         
-                        
-                        <ul id="list-keranjang" class="list-group list-group-flush mb-3 scroll-area" style="max-height: 250px; overflow-y:auto;">
+                        <ul id="list-keranjang" class="list-group list-group-flush mb-3 scroll-area" style="max-height: 250px; overflow-y: auto;">
                             <li class="list-group-item text-center small text-muted border-0 bg-transparent py-4">
                                 🥣 Belum ada pesanan
                             </li>
@@ -104,8 +111,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
     <script type="module" src="app.js"></script>
-    
 </body>
 </html>
