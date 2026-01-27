@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, updateDoc, doc, orderBy, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// 1. CONFIG FIREBASE (PASTE DISINI)
+// 1. CONFIG FIREBASE (PASTE CONFIG KAMU DISINI LAGI)
 const firebaseConfig = {
     apiKey: "AIzaSyA0rRKR7gTqgEysikcKV9YhairiPyZH-JM",
     authDomain: "projek-pbp-akhir.firebaseapp.com",
@@ -15,19 +15,40 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// VARIABEL GLOBAL PENTING
+let idMenuYangDiedit = null; // Menyimpan ID menu yang sedang diedit
+let dataMenuCache = {};      // Menyimpan data menu biar gampang diambil
+
+// Expose fungsi ke window
+window.hapusMenu = hapusMenu;
+window.ubahStok = ubahStok;
+window.modeEdit = modeEdit;
+window.batalEdit = batalEdit;
+
 // 2. TAMPILKAN DATA TABEL (REALTIME)
 const menuRef = collection(db, "menu");
-const q = query(menuRef, orderBy("nama", "asc")); // Urutkan sesuai abjad
+const q = query(menuRef, orderBy("nama", "asc"));
 
 onSnapshot(q, (snapshot) => {
     const tabel = document.getElementById('tabel-menu');
     tabel.innerHTML = '';
+    dataMenuCache = {}; // Reset cache
+
+    if (snapshot.empty) {
+        tabel.innerHTML = '<tr><td colspan="5" class="text-center">Belum ada menu</td></tr>';
+        return;
+    }
 
     snapshot.forEach((docSnap) => {
         const data = docSnap.data();
         const id = docSnap.id;
+        
+        // Simpan data ke memori biar tombol Edit gampang ambilnya
+        dataMenuCache[id] = data;
 
-        // Cek Status Stok untuk warna tombol
+        // Cek nama aman (untuk alert hapus)
+        const safeNama = data.nama.replace(/'/g, "\\'");
+
         const statusBadge = data.stok ? 
             `<span class="badge bg-success">Tersedia</span>` : 
             `<span class="badge bg-secondary">Habis</span>`;
@@ -46,10 +67,15 @@ onSnapshot(q, (snapshot) => {
                 <td>${statusBadge}</td>
                 <td>
                     <div class="btn-group btn-group-sm">
-                        <button onclick="ubahStok('${id}', ${data.stok})" class="btn ${btnStokClass}" title="Ubah Stok">
+                        <button onclick="window.modeEdit('${id}')" class="btn btn-warning text-white" title="Edit Menu">
+                            ✏️
+                        </button>
+                        
+                        <button onclick="window.ubahStok('${id}', ${data.stok})" class="btn ${btnStokClass}" title="Ubah Stok">
                             ${btnStokText}
                         </button>
-                        <button onclick="hapusMenu('${id}', '${data.nama}')" class="btn btn-danger" title="Hapus Menu">
+                        
+                        <button onclick="window.hapusMenu('${id}', '${safeNama}')" class="btn btn-danger" title="Hapus Menu">
                             🗑️
                         </button>
                     </div>
@@ -58,15 +84,58 @@ onSnapshot(q, (snapshot) => {
         `;
         tabel.innerHTML += html;
     });
-
-    // Expose fungsi ke window
-    window.hapusMenu = hapusMenu;
-    window.ubahStok = ubahStok;
 });
 
-// 3. FUNGSI TAMBAH MENU BARU
+// 3. FUNGSI UNTUK MENGAKTIFKAN MODE EDIT
+function modeEdit(id) {
+    const data = dataMenuCache[id]; // Ambil data dari memori
+    if (!data) return;
+
+    // Isi formulir dengan data lama
+    document.getElementById('nama').value = data.nama;
+    document.getElementById('harga').value = data.harga;
+    document.getElementById('kategori').value = data.kategori;
+    document.getElementById('gambar').value = data.gambar;
+
+    // Ubah Tampilan Form jadi Mode Edit
+    idMenuYangDiedit = id; // Set global variable
+    
+    document.getElementById('form-title').innerText = "Edit Menu: " + data.nama;
+    document.getElementById('form-title').className = "fw-bold mb-3 text-warning";
+    
+    const btnSubmit = document.getElementById('btn-submit');
+    btnSubmit.innerText = "Update Data Menu";
+    btnSubmit.classList.remove('btn-primary');
+    btnSubmit.classList.add('btn-warning');
+
+    // Munculkan tombol Batal
+    document.getElementById('btn-batal').classList.remove('d-none');
+    
+    // Scroll ke atas (biar kelihatan di HP)
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// 4. FUNGSI BATAL EDIT (RESET FORM)
+function batalEdit() {
+    document.getElementById('form-menu').reset();
+    idMenuYangDiedit = null; // Reset ID
+
+    // Kembalikan Tampilan ke Mode Tambah
+    document.getElementById('form-title').innerText = "Tambah Menu Baru";
+    document.getElementById('form-title').className = "fw-bold mb-3 text-dark";
+
+    const btnSubmit = document.getElementById('btn-submit');
+    btnSubmit.innerText = "Simpan ke Database";
+    btnSubmit.classList.remove('btn-warning');
+    btnSubmit.classList.add('btn-primary');
+
+    // Sembunyikan tombol Batal
+    document.getElementById('btn-batal').classList.add('d-none');
+}
+
+// 5. FUNGSI SUBMIT (BISA SIMPAN BARU ATAU UPDATE)
 document.getElementById('form-menu').addEventListener('submit', async (e) => {
-    e.preventDefault(); // Mencegah reload halaman
+    e.preventDefault();
 
     const nama = document.getElementById('nama').value;
     const harga = document.getElementById('harga').value;
@@ -74,49 +143,60 @@ document.getElementById('form-menu').addEventListener('submit', async (e) => {
     const gambar = document.getElementById('gambar').value;
 
     try {
-        await addDoc(collection(db, "menu"), {
-            nama: nama,
-            harga: parseInt(harga), // Pastikan jadi angka
-            kategori: kategori,
-            gambar: gambar,
-            stok: true // Default menu baru pasti ada stoknya
-        });
-
-        Swal.fire('Berhasil!', 'Menu baru telah ditambahkan.', 'success');
-        document.getElementById('form-menu').reset(); // Kosongkan form
-
+        if (idMenuYangDiedit) {
+            // === LOGIKA UPDATE (EDIT) ===
+            await updateDoc(doc(db, "menu", idMenuYangDiedit), {
+                nama: nama,
+                harga: parseInt(harga),
+                kategori: kategori,
+                gambar: gambar
+                // Stok tidak diupdate disini biar ga kereset
+            });
+            Swal.fire('Updated!', 'Data menu berhasil diperbarui.', 'success');
+            batalEdit(); // Reset form setelah sukses
+            
+        } else {
+            // === LOGIKA TAMBAH BARU ===
+            await addDoc(collection(db, "menu"), {
+                nama: nama,
+                harga: parseInt(harga),
+                kategori: kategori,
+                gambar: gambar,
+                stok: true
+            });
+            Swal.fire('Berhasil!', 'Menu baru ditambahkan.', 'success');
+            document.getElementById('form-menu').reset();
+        }
     } catch (error) {
+        console.error(error);
         Swal.fire('Error', error.message, 'error');
     }
 });
 
-// 4. FUNGSI HAPUS MENU
+// 6. FUNGSI HAPUS (SAMA KAYA KEMARIN)
 async function hapusMenu(id, namaMenu) {
     Swal.fire({
         title: `Hapus ${namaMenu}?`,
-        text: "Data akan hilang permanen!",
+        text: "Data tidak bisa dikembalikan!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
         confirmButtonText: 'Ya, Hapus'
     }).then(async (result) => {
         if (result.isConfirmed) {
+            // Jika menu yang lagi diedit malah dihapus, reset formnya
+            if (idMenuYangDiedit === id) batalEdit(); 
+            
             await deleteDoc(doc(db, "menu", id));
             Swal.fire('Terhapus!', 'Menu telah dihapus.', 'success');
         }
     });
 }
 
-// 5. FUNGSI UBAH STATUS STOK (TOGGLE)
+// 7. FUNGSI STOK (SAMA KAYA KEMARIN)
 async function ubahStok(id, statusSaatIni) {
-    // Kalau sekarang true, jadi false. Kalau false, jadi true.
-    const statusBaru = !statusSaatIni; 
-    
     try {
-        await updateDoc(doc(db, "menu", id), {
-            stok: statusBaru
-        });
-        // Tidak perlu alert, karena onSnapshot otomatis update tampilan
+        await updateDoc(doc(db, "menu", id), { stok: !statusSaatIni });
     } catch (error) {
         console.error(error);
     }

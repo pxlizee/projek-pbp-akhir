@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Restoran Ikbal Hensem</title>
+    <title>Restoran Ikbalz Henzem</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -12,96 +12,135 @@
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #f8f9fa;
+            padding-bottom: 80px;
         }
 
         .hero-section {
-            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200');
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200');
             background-size: cover;
             background-position: center;
             color: white;
-            padding: 80px 0;
+            padding: 60px 0;
             margin-bottom: 30px;
-            border-radius: 0 0 20px 20px;
+            border-radius: 0 0 25px 25px;
+            animation: fadeIn 1s ease-out;
         }
 
         .card-menu {
-            transition: transform 0.2s, box-shadow 0.2s;
             border: none;
             border-radius: 15px;
             overflow: hidden;
+            background: white;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
         .card-menu:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
         }
 
-        .card-img-top {
-            height: 180px;
+        .card-menu:active {
+            transform: scale(0.98);
+        }
+
+        .img-wrap {
+            overflow: hidden;
+            height: 150px;
+            position: relative;
+        }
+
+        .img-wrap img {
+            width: 100%;
+            height: 100%;
             object-fit: cover;
+            transition: transform 0.5s ease;
         }
 
-        .card-cart {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        .card-menu:hover .img-wrap img {
+            transform: scale(1.15);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .menu-item-anim {
+            animation: fadeInUp 0.6s ease-out forwards;
+            opacity: 0;
+        }
+
+        .active-filter {
+            background-color: #dc3545 !important;
+            color: white !important;
+        }
+
+        .scroll-area::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .scroll-area::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
         }
     </style>
 </head>
 <body>
+
+    <!-- Hero Section -->
     <div class="hero-section text-center">
         <div class="container">
-            <h1 class="display-4 fw-bold">Selamat Datang! 🍽️</h1>
-            <p class="lead">Nikmati hidangan lezat langsung dari dapur kami.</p>
+            <h1 class="fw-bold">Mau Makan Apa? 🍽️</h1>
+            <p class="mb-0 opacity-75">Pesan makanan favoritmu sekarang.</p>
         </div>
     </div>
 
-    <div class="container mb-5">
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Category Filter -->
+        <div class="d-flex gap-2 overflow-auto pb-3 mb-2" style="white-space: nowrap;">
+            <button onclick="filterKategori('all')" class="btn btn-outline-danger rounded-pill px-4 active-filter" id="btn-all">Semua</button>
+            <button onclick="filterKategori('makanan')" class="btn btn-outline-danger rounded-pill px-4" id="btn-makanan">Makanan</button>
+            <button onclick="filterKategori('minuman')" class="btn btn-outline-danger rounded-pill px-4" id="btn-minuman">Minuman</button>
+        </div>
+
+        <!-- Menu & Cart Layout -->
         <div class="row">
-            <div class="col-md-8">
-                <h4 class="mb-4 fw-bold text-dark border-start border-4 border-danger ps-3">Daftar Menu</h4>
-
-                <div class="mb-4 d-flex gap-2 overflow-auto pb-2">
-                    <button onclick="filterKategori('all')" class="btn btn-dark rounded-pill px-4 active-filter" id="btn-all">Semua</button>
-                    <button onclick="filterKategori('makanan')" class="btn btn-outline-dark rounded-pill px-4" id="btn-makanan">Makanan</button>
-                    <button onclick="filterKategori('minuman')" class="btn btn-outline-dark rounded-pill px-4" id="btn-minuman">Minuman</button>
-                </div>
-
-                <div id="daftar-menu" class="row g-4">
+            <!-- Menu List -->
+            <div class="col-md-8 mb-4">
+                <div id="daftar-menu" class="row g-3">
                     <div class="col-12 text-center py-5">
                         <div class="spinner-border text-danger" role="status"></div>
-                        <p class="mt-2 text-muted">Sedang menyiapkan menu...</p>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-4">
-                <div class="card card-cart sticky-top" style="top: 20px;">
-                    <div class="card-header bg-white border-0 pt-4 pb-0">
+            <!-- Desktop Cart Sidebar -->
+            <div class="col-md-4 d-none d-md-block">
+                <div class="card shadow-sm border-0 sticky-top" style="top: 20px; border-radius: 15px;">
+                    <div class="card-header bg-white border-0 pt-4">
                         <h5 class="fw-bold">🛒 Keranjang Anda</h5>
                     </div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <input type="text" id="input-nama" class="form-control bg-light border-0 py-2" placeholder="Nama Pemesan">
-                        </div>
-                        <div class="mb-3">
-                            <textarea id="input-catatan" class="form-control bg-light border-0 small" rows="2" placeholder="Catatan? (Cth: Nasi Goreng pedas, Teh tawar)"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <input type="number" id="input-meja" class="form-control bg-light border-0 py-2" placeholder="No. Meja">
-                        </div>
+                        <input type="text" id="input-nama" class="form-control bg-light border-0 mb-2" placeholder="Nama Pemesan">
+                        <input type="number" id="input-meja" class="form-control bg-light border-0 mb-2" placeholder="No. Meja">
+                        <textarea id="input-catatan" class="form-control bg-light border-0 small mb-3" rows="2" placeholder="Catatan (Pedas, tanpa es, dll)"></textarea>
                         
                         <ul id="list-keranjang" class="list-group list-group-flush mb-3 scroll-area" style="max-height: 250px; overflow-y: auto;">
-                            <li class="list-group-item text-center small text-muted border-0 bg-transparent py-4">
-                                🥣 Belum ada pesanan
-                            </li>
+                            <li class="list-group-item text-center small text-muted border-0">Keranjang kosong</li>
                         </ul>
 
-                        <div class="d-flex justify-content-between fw-bold mb-4 fs-5">
-                            <span>Total</span>
+                        <div class="d-flex justify-content-between fw-bold mb-3">
+                            <span>Total:</span>
                             <span id="text-total" class="text-danger">Rp 0</span>
                         </div>
-                        <button onclick="kirimPesanan()" id="btn-pesan" class="btn btn-danger w-100 py-2 fw-bold rounded-pill shadow-sm" disabled>
+                        <button onclick="kirimPesanan()" id="btn-pesan" class="btn btn-danger w-100 py-2 fw-bold rounded-pill" disabled>
                             Pesan Sekarang
                         </button>
                     </div>
@@ -110,7 +149,37 @@
         </div>
     </div>
 
+    <!-- Mobile Cart Button -->
+    <div class="fixed-bottom p-3 d-md-none" style="z-index: 1050;">
+        <button class="btn btn-danger w-100 shadow-lg d-flex justify-content-between align-items-center py-3 px-4 fw-bold rounded-pill" 
+                type="button" data-bs-toggle="offcanvas" data-bs-target="#keranjangMobile">
+            <span>🛒 <span id="mobile-qty">0</span> Item</span>
+            <span id="mobile-total">Rp 0</span>
+        </button>
+    </div>
+
+    <!-- Mobile Cart Offcanvas -->
+    <div class="offcanvas offcanvas-bottom h-75 rounded-top-4" tabindex="-1" id="keranjangMobile" style="z-index: 9999;">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title fw-bold">🛒 Keranjang Pesanan</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column">
+            <input type="text" id="input-nama-mobile" class="form-control bg-light border-0 mb-2" placeholder="Nama Pemesan">
+            <input type="number" id="input-meja-mobile" class="form-control bg-light border-0 mb-2" placeholder="No. Meja">
+            <textarea id="input-catatan-mobile" class="form-control bg-light border-0 small mb-3" rows="2" placeholder="Catatan..."></textarea>
+            
+            <ul id="list-keranjang-mobile" class="list-group list-group-flush mb-3 flex-grow-1 overflow-auto"></ul>
+
+            <button onclick="kirimPesananMobile()" id="btn-pesan-mobile" class="btn btn-danger w-100 py-3 fw-bold rounded-pill mt-auto" disabled>
+                Pesan Sekarang
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script type="module" src="app.js"></script>
+    
 </body>
 </html>
