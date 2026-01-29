@@ -3,7 +3,7 @@ import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, updateDoc, doc
 // 1. TAMBAH IMPORT AUTH
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// 2. CONFIG FIREBASE (PASTE PUNYA KAMU)
+// 2. CONFIG FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyA0rRKR7gTqgEysikcKV9YhairiPyZH-JM",
     authDomain: "projek-pbp-akhir.firebaseapp.com",
