@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getFirestore, collection, getDocs, addDoc, serverTimestamp, onSnapshot, doc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // ==========================================
-// 1. CONFIG FIREBASE (WAJIB DIGANTI!)
+// 1. CONFIG FIREBASE
 // ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyA0rRKR7gTqgEysikcKV9YhairiPyZH-JM",
@@ -309,7 +309,7 @@ function pantauPesanan(orderId) {
             Swal.fire({
                 title: 'MAKANAN SIAP! 🍜',
                 text: 'Silakan ambil pesanan Anda.',
-                imageUrl: 'https://media.giphy.com/media/l1AsAMOkYjwteLRDA/giphy.gif',
+                imageUrl: 'https://media.giphy.com/media/3o7TKR1yT2b2ZqHqda/giphy.gif',
                 imageWidth: 200, imageHeight: 200,
                 confirmButtonColor: '#198754'
             });

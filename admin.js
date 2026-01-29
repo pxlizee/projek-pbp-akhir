@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, orderBy, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-// 1. CONFIG FIREBASE (PASTE CONFIG KAMU DISINI LAGI YA!)
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+// 1. KONFIGURASI FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyA0rRKR7gTqgEysikcKV9YhairiPyZH-JM",
     authDomain: "projek-pbp-akhir.firebaseapp.com",
@@ -14,7 +14,14 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
+onAuthStateChanged(auth, (user) => {
+    if (!user) {
+        // Kalau tidak ada user login, tendang!
+        window.location.href = "login.html";
+    }
+});
 // 2. FUNGSI LIVE MONITORING
 const pesananRef = collection(db, "pesanan");
 const q = query(pesananRef, orderBy("waktu_pesan", "desc"));
