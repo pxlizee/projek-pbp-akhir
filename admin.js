@@ -129,3 +129,17 @@ async function hapusPesanan(id) {
         }
     });
 }
+
+// Tambahkan fungsi ini biar tombolnya jalan
+window.logout = function() {
+    Swal.fire({
+        title: 'Keluar?', text: "Anda harus login lagi nanti", icon: 'warning',
+        showCancelButton: true, confirmButtonText: 'Ya, Keluar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            signOut(auth).then(() => {
+                window.location.href = "login.html";
+            });
+        }
+    });
+}
