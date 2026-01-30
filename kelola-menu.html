@@ -61,9 +61,16 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label small text-muted">Link Gambar (URL)</label>
-                            <input type="text" id="gambar" class="form-control" placeholder="https://..." required>
-                            <div class="form-text small">Tips: Klik kanan gambar > Copy Image Address</div>
+                            <label class="form-label small text-muted">Foto Menu</label>
+                            <div class="input-group mb-2">
+                                <input type="file" class="form-control" id="file-upload" accept="image/*">
+                                <button class="btn btn-outline-secondary" type="button" id="btn-upload" onclick="window.uploadGambar()">
+                                    ⬆️ Upload
+                                </button>
+                            </div>
+                            <div id="upload-status" class="small text-muted mb-2"></div>
+                            <label class="form-label small text-muted">Link Gambar (Otomatis)</label>
+                            <input type="text" id="gambar" class="form-control" placeholder="Link muncul disini setelah upload..." readonly required>
                         </div>
                         <button type="submit" class="btn btn-primary fw-bold w-100">Simpan ke Database</button>
                     </form>

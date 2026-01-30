@@ -1,3 +1,4 @@
+window.uploadGambar = uploadGambar; // <-- PENTING: Biar HTML bisa panggil fungsinya
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, updateDoc, doc, orderBy, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 // 1. TAMBAH IMPORT AUTH
@@ -182,5 +183,84 @@ async function ubahStok(id, statusSaatIni) {
         await updateDoc(doc(db, "menu", id), { stok: !statusSaatIni });
     } catch (error) {
         console.error(error);
+    }
+}
+
+// ==========================================
+// FUNGSI UPLOAD KE CLOUDINARY
+// ==========================================
+
+async function uploadGambar() {
+    const fileInput = document.getElementById('file-upload');
+    const statusText = document.getElementById('upload-status');
+    const urlInput = document.getElementById('gambar'); 
+    const btnUpload = document.getElementById('btn-upload');
+
+    const CLOUD_NAME = 'djqc7yrbk';  
+    const UPLOAD_PRESET = 'uas-pbp'; 
+    // Cek apakah file dipilih
+    if (fileInput.files.length === 0) {
+        Swal.fire('Mana filenya?', 'Pilih gambar dulu dari laptop/HP!', 'warning');
+        return;
+    }
+
+    // ... sisa kode ke bawah sama persis seperti sebelumnya ...
+
+    const file = fileInput.files[0];
+    
+    // Cek ukuran (Maks 3MB)
+    if (file.size > 3 * 1024 * 1024) {
+        Swal.fire('Kegedean!', 'Maksimal ukuran file 3MB ya.', 'error');
+        return;
+    }
+
+    try {
+        // Tampilkan status loading
+        statusText.innerHTML = `<span class="text-primary">⏳ Sedang mengupload ke Cloudinary...</span>`;
+        btnUpload.disabled = true;
+        btnUpload.innerHTML = "Loading...";
+
+        // Siapkan Data
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', UPLOAD_PRESET); 
+
+        // Kirim ke Cloudinary
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            // Ambil Link yang HTTPS (Aman)
+            const linkGambar = result.secure_url; 
+
+            // Masukkan link ke kotak input
+            urlInput.value = linkGambar;
+            
+            statusText.innerHTML = `<span class="text-success">✅ Upload Berhasil!</span>`;
+            
+            Swal.fire({
+                title: 'Mantap!',
+                text: 'Gambar berhasil disimpan di Cloud.',
+                imageUrl: linkGambar,
+                imageWidth: 200, imageHeight: 200, imageAlt: 'Preview',
+                timer: 2000, showConfirmButton: false
+            });
+
+        } else {
+            throw new Error(result.error.message);
+        }
+
+    } catch (error) {
+        console.error("Error:", error);
+        statusText.innerHTML = `<span class="text-danger">❌ Error: ${error.message}</span>`;
+        Swal.fire('Gagal Upload', 'Cek Cloud Name & Preset kamu lagi.', 'error');
+    } finally {
+        // Nyalakan tombol lagi
+        btnUpload.disabled = false;
+        btnUpload.innerHTML = "⬆️ Upload";
     }
 }
